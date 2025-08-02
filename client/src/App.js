@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import "./App.css";
 
 function App() {
+  const API_BASE = "https://study-group-api-4wu8.onrender.com/api/v1";
+
   const [studyPosts, setStudyPosts] = useState([]);
   const [courses, setCourses] = useState([]);
   const [formData, setFormData] = useState({
@@ -14,24 +16,20 @@ function App() {
   const [message, setMessage] = useState("");
   const [loadError, setLoadError] = useState(false);
 
-  // Filters & Search
   const [sortBy, setSortBy] = useState("newest");
   const [filterCourse, setFilterCourse] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Load posts (triggered whenever sort/filter/search changes)
   useEffect(() => {
-    fetch("/api/v1/study-posts")
+    fetch(`${API_BASE}/study-posts`)
       .then(res => res.json())
       .then(data => {
         let posts = [...data];
 
-        // Filter by course
         if (filterCourse) {
           posts = posts.filter(p => p.courseCode === filterCourse);
         }
 
-        // Search
         if (searchTerm) {
           const term = searchTerm.toLowerCase();
           posts = posts.filter(p =>
@@ -40,9 +38,8 @@ function App() {
           );
         }
 
-        // Sort
         if (sortBy === "newest") {
-          posts.reverse(); // assuming newest is last
+          posts.reverse();
         } else if (sortBy === "course") {
           posts.sort((a, b) => a.courseName.localeCompare(b.courseName));
         }
@@ -55,9 +52,8 @@ function App() {
       });
   }, [sortBy, filterCourse, searchTerm]);
 
-  // Load course list
   useEffect(() => {
-    fetch("/api/v1/courses")
+    fetch(`${API_BASE}/courses`)
       .then(res => res.json())
       .then(data => setCourses(data))
       .catch(err => {
@@ -82,8 +78,8 @@ function App() {
 
     const method = editingId ? "PUT" : "POST";
     const url = editingId
-      ? `/api/v1/study-posts/${editingId}`
-      : "/api/v1/study-posts";
+      ? `${API_BASE}/study-posts/${editingId}`
+      : `${API_BASE}/study-posts`;
 
     fetch(url, {
       method,
@@ -94,10 +90,8 @@ function App() {
         if (!res.ok) throw new Error("Request failed");
         return res.json();
       })
-      .then(data => {
-        setMessage(
-          editingId ? "✅ Post updated successfully!" : "✅ Post submitted successfully!"
-        );
+      .then(() => {
+        setMessage(editingId ? "✅ Post updated successfully!" : "✅ Post submitted successfully!");
         setFormData({
           courseCode: "",
           timeSlot: "",
@@ -105,7 +99,7 @@ function App() {
           studentName: ""
         });
         setEditingId(null);
-        refreshPosts(); // re-fetch after submit
+        refreshPosts();
       })
       .catch(err => {
         console.error("❌ Error submitting:", err);
@@ -114,7 +108,7 @@ function App() {
   };
 
   const handleDelete = id => {
-    fetch(`/api/v1/study-posts/${id}`, { method: "DELETE" })
+    fetch(`${API_BASE}/study-posts/${id}`, { method: "DELETE" })
       .then(res => {
         if (!res.ok) throw new Error("Delete failed");
         return res.json();
@@ -141,8 +135,7 @@ function App() {
   };
 
   const refreshPosts = () => {
-    // Trigger re-fetch with current filters
-    setSortBy(prev => prev); // force refresh via dependency
+    setSortBy(prev => prev); // dummy trigger to refresh
   };
 
   return (
@@ -213,7 +206,6 @@ function App() {
         <p style={{ color: "red" }}>⚠️ Could not load course list.</p>
       )}
 
-      {/* Sort & Filter */}
       <div className="sort-filter-bar">
         <label>
           Sort by:{" "}
@@ -249,7 +241,6 @@ function App() {
         </label>
       </div>
 
-      {/* Posts */}
       <h2 className="section-heading">📝 Study Posts</h2>
       {studyPosts.length === 0 ? (
         <p>No study posts yet.</p>
@@ -257,18 +248,10 @@ function App() {
         <ul className="posts-list">
           {studyPosts.map(post => (
             <li key={post._id} className="post-card">
-              <p>
-                <strong>📘 Course:</strong> {post.courseName || post.courseCode}
-              </p>
-              <p>
-                <strong>🕐 Time:</strong> {post.timeSlot}
-              </p>
-              <p>
-                <strong>📝 Description:</strong> {post.description}
-              </p>
-              <p>
-                <strong>👤 By:</strong> {post.studentName}
-              </p>
+              <p><strong>📘 Course:</strong> {post.courseName || post.courseCode}</p>
+              <p><strong>🕐 Time:</strong> {post.timeSlot}</p>
+              <p><strong>📝 Description:</strong> {post.description}</p>
+              <p><strong>👤 By:</strong> {post.studentName}</p>
               <div className="button-row">
                 <button onClick={() => handleEdit(post)}>✏️ Edit</button>
                 <button onClick={() => handleDelete(post._id)}>🗑️ Delete</button>
